@@ -11,14 +11,15 @@ const getLang = (keys: string[]) => {
 };
 export const initConfigSearch = (liandi: ILiandi, element: HTMLElement) => {
     const configIndex = [
-        ['markdown', 'katex', 'mathjax'].concat(getLang(['config', 'editMode', 'wysiwyg', 'ir', 'sv', 'outline',
+        ['markdown', 'katex', 'mathjax'].concat(getLang(['config', 'outline',
             'autoSpace', 'fixTermTypo', 'chinesePunctuation', 'inlineMathDigit', 'mathEngine', 'hideToolbar', 'toc',
-            'footnotes', 'setext', 'paragraphBeginningSpace'
+            'footnotes', 'paragraphBeginningSpace'
         ])),
         getLang(['autoFetch', 'image']),
         getLang(['theme', 'themeLight', 'themeDark']),
         ['English', '简体中文'].concat(getLang(['language'])),
         getLang(['about', 'slogan', 'currentVer', 'checkUpdate']),
+        getLang(['help', 'help1', 'help2', 'help3', 'help4', 'help5']),
     ];
     const inputElement = element.querySelector('.input') as HTMLInputElement;
     const updateTab = () => {

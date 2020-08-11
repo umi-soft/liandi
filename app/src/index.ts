@@ -1,19 +1,18 @@
 import './assets/scss/base.scss';
 import {Navigation} from './navigation';
-import {Files} from './files';
 import {WebSocketUtil} from './websocket';
-import './components/file-item';
-import './components/tree-list';
 import './components/tab-panel';
 import './icons/index';
 import {Editors} from './editors';
 import {Menus} from './menu';
 import {resize} from './util/resize';
 import {initGlobalKeyPress} from './hotkey';
-import {ipcRenderer, remote, shell} from 'electron';
+import {ipcRenderer, remote} from 'electron';
 import {Find} from './search/Find';
 import {Constants} from './constants';
+import {mountFile, mountWebDAV} from './util/mount';
 import {initSearch} from './search';
+import {Backlinks} from './backlinks';
 
 class App {
     public liandi: ILiandi;
@@ -23,55 +22,69 @@ class App {
             current: {
                 path: '',
             },
-            componentCSS: require('../dist/components.css')[0][1]
         };
 
         this.liandi.ws = new WebSocketUtil(this.liandi, () => {
-            this.liandi.navigation = new Navigation();
-            this.liandi.files = new Files();
-            this.liandi.editors = new Editors(this.liandi);
+            this.liandi.navigation = new Navigation(this.liandi);
+            this.liandi.editors = new Editors();
             this.liandi.menus = new Menus(this.liandi);
             this.liandi.find = new Find();
+            this.liandi.backlinks = new Backlinks(this.liandi);
 
             resize('resize');
-            resize('resize2');
+            resize('resize2', true);
 
             initGlobalKeyPress(this.liandi);
 
             this.onIpc();
             this.initWindow();
-            this.initWebview();
+            this.initBar();
+
+            // 打开新窗口的处理
+            remote.process.argv.forEach((item, index) => {
+                if (item.indexOf("--liandi-url") === 0) {
+                    this.liandi.current = {
+                        dir: {
+                            url: decodeURIComponent(remote.process.argv[index]).substr(13)
+                        },
+                        path: decodeURIComponent(remote.process.argv[index + 1]).substr(14)
+                    }
+                    this.liandi.navigation.hide()
+                    this.liandi.backlinks.hide();
+                    this.liandi.ws.send('get', {
+                        url: this.liandi.current.dir.url,
+                        path: this.liandi.current.path,
+                    }, true)
+                }
+            });
         });
     }
 
-    private initWebview() {
-        const editorWebview = document.querySelector('.editors__webview') as Electron.WebviewTag;
-        // 在编辑器内打开链接的处理
-        editorWebview.addEventListener('will-navigate', e => {
-            e.preventDefault();
-            editorWebview.stop();
-            editorWebview.getWebContents().stop();
-            shell.openExternal(e.url);
-        });
-
-        // 监听 webview 发送过来的事件
-        editorWebview.addEventListener('ipc-message', (event) => {
-            switch (event.channel) {
-                case Constants.LIANDI_EDITOR_FULLSCREEN:
-                    editorWebview.classList.add('editors__webview--fullscreen');
-                    break;
-                case Constants.LIANDI_EDITOR_RESTORE:
-                    editorWebview.classList.remove('editors__webview--fullscreen');
-                    break;
-                case Constants.LIANDI_WEBSOCKET_PUT:
-                    this.liandi.editors.save(this.liandi);
-                    break;
-                case Constants.LIANDI_SEARCH_OPEN:
-                    initSearch(this.liandi);
-                    break;
-                default:
-                    break;
+    private initBar() {
+        document.getElementById('barNavigation').addEventListener('click', () => {
+            if (this.liandi.navigation.element.classList.contains('fn__none')) {
+                this.liandi.navigation.show()
+            } else {
+                this.liandi.navigation.hide()
             }
+            window.dispatchEvent(new CustomEvent('resize'));
+        });
+        document.getElementById('barBacklinks').addEventListener('click', () => {
+            if (this.liandi.backlinks.element.classList.contains('fn__none')) {
+                this.liandi.backlinks.show(this.liandi);
+            } else {
+                this.liandi.backlinks.hide();
+            }
+            window.dispatchEvent(new CustomEvent('resize'));
+        });
+        document.getElementById('barSettings').addEventListener('click', () => {
+            initSearch(this.liandi, 'settings');
+        });
+        document.getElementById('editorEmptyMount').addEventListener('click', () => {
+            mountFile(this.liandi);
+        });
+        document.getElementById('editorEmptyMountDAV').addEventListener('click', () => {
+            mountWebDAV(this.liandi);
         });
     }
 
@@ -95,10 +108,9 @@ class App {
             document.body.classList.remove('body--blur');
         });
 
-
         // window action
         if (process.platform === 'darwin') {
-            document.querySelector('.editors__drag').addEventListener('dblclick', () => {
+            document.querySelector('.drag').addEventListener('dblclick', () => {
                 if (currentWindow.isMaximized()) {
                     currentWindow.setSize(1024, 768);
                 } else {
@@ -112,26 +124,25 @@ class App {
             document.body.classList.add('body--win32');
         }
 
-        document.querySelector('.navigation').classList.add('navigation--win32');
         const maxBtnElement = document.getElementById('maxWindow');
         const restoreBtnElement = document.getElementById('restoreWindow');
         const minBtnElement = document.getElementById('minWindow');
         const closeBtnElement = document.getElementById('closeWindow');
 
-        minBtnElement.addEventListener('click', event => {
+        minBtnElement.addEventListener('click', () => {
             currentWindow.minimize();
         });
         minBtnElement.style.display = 'block';
 
-        maxBtnElement.addEventListener('click', event => {
+        maxBtnElement.addEventListener('click', () => {
             currentWindow.maximize();
         });
 
-        restoreBtnElement.addEventListener('click', event => {
+        restoreBtnElement.addEventListener('click', () => {
             currentWindow.unmaximize();
         });
 
-        closeBtnElement.addEventListener('click', event => {
+        closeBtnElement.addEventListener('click', () => {
             currentWindow.close();
         });
         closeBtnElement.style.display = 'block';

@@ -1,0 +1,45 @@
+.editor {
+  &__input {
+    font-size: 16px;
+    border: 0;
+    padding: 10px;
+    background-color: var(--panel-background-color);
+    color: var(--textarea-text-color);
+    width: 100%;
+    box-sizing: border-box;
+    line-height: 20px;
+    text-align: center;
+
+    &:focus {
+      background-color: var(--textarea-background-color);
+    }
+  }
+
+  &__empty {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+
+    .item {
+      padding: 10px;
+      cursor: pointer;
+    }
+  }
+
+  &__blockhint {
+    background-color: var(--panel-background-color);
+    position: absolute;
+    box-shadow: var(--panel-shadow);
+    border-radius: 3px;
+    z-index: 4;
+    line-height: 20px;
+    display: none;
+    padding: 6px 10px;
+    font-size: 16px;
+    max-width: 60%;
+    color: var(--text-secondary-color);
+    overflow: auto;
+    word-break: break-word;
+  }
+}

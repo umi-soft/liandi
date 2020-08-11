@@ -34,6 +34,7 @@
   &__hr {
     height: 10px;
     display: block;
+
     &--s {
       height: 5px;
     }
@@ -120,6 +121,14 @@
       display: none;
     }
   }
+
+  &__a {
+    color: var(--text-color);
+
+    &:hover {
+      color: var(--text-secondary-color);
+    }
+  }
 }
 
 .ft {
@@ -137,5 +146,9 @@
 
   &__secondary {
     color: var(--text-secondary-color);
+  }
+
+  &__pink {
+    color: #ea4aaa;
   }
 }

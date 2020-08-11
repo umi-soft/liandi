@@ -20,26 +20,25 @@ import (
 	"time"
 
 	"github.com/88250/gulu"
+	"github.com/88250/liandi/kernel/cmd"
+	"github.com/88250/liandi/kernel/model"
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/go-ps"
 	"gopkg.in/olahol/melody.v1"
 )
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 
-	InitLog()
-	InitConf()
-	InitMount()
-	InitSearch()
+	model.InitLog()
+	model.InitSessions()
+	model.InitConf()
+	model.InitMount()
+	model.InitIndex()
 
-	go ParentExited()
-	checkUpdatePeriodically()
+	model.InitProcess()
+	go model.ParentExited()
+	model.CheckUpdatePeriodically()
 }
-
-// Mode 标识了运行模式，默认开发环境。
-// 打包时通过构建参数 -ldflags "-X main.Mode=prod" 注入 prod 生产模式，参考 build 脚本。
-var Mode = "dev"
 
 func main() {
 	gin.SetMode(gin.ReleaseMode)
@@ -62,63 +61,68 @@ func main() {
 	m.Config.MaxMessageSize = 1024 * 1024 * 2
 	r.GET("/ws", func(c *gin.Context) {
 		if err := m.HandleRequest(c.Writer, c.Request); nil != err {
-			Logger.Errorf("处理命令失败：%s", err)
+			model.Logger.Errorf("处理命令失败：%s", err)
 		}
 	})
 
-	r.POST("/upload", Upload)
-	r.POST("/upload/fetch", UploadFetch)
+	r.POST("/upload", model.Upload)
+	r.POST("/upload/fetch", model.UploadFetch)
 
 	m.HandleConnect(func(s *melody.Session) {
-		SetPushChan(s)
-		Logger.Debugf("WebSocket 已连接")
+		model.AddPushChan(s)
+		//sessionId, _ := s.Get("id")
+		//model.Logger.Debugf("会话 [%s] 已连接", sessionId)
 	})
 
 	m.HandleDisconnect(func(s *melody.Session) {
-		Logger.Debugf("WebSocket 连接已断开")
+		model.RemovePushChan(s)
+		//sessionId, _ := s.Get("id")
+		//model.Logger.Debugf("会话 [%s] 已断开", sessionId)
 	})
 
 	m.HandleError(func(s *melody.Session, err error) {
-		Logger.Debugf("WebSocket 连接报错：%s", err)
+		//sessionId, _ := s.Get("id")
+		//model.Logger.Debugf("会话 [%s] 报错：%s", sessionId, err)
 	})
 
 	m.HandleClose(func(s *melody.Session, i int, str string) error {
-		Logger.Debugf("WebSocket 关闭：%v, %v", i, str)
+		//sessionId, _ := s.Get("id")
+		//model.Logger.Debugf("会话 [%s] 关闭：%v, %v", sessionId, i, str)
 		return nil
 	})
 
 	m.HandleMessage(func(s *melody.Session, msg []byte) {
-		Logger.Debugf("request [%s]", shortReqMsg(msg))
+		model.Logger.Debugf("request [%s]", shortReqMsg(msg))
 		request := map[string]interface{}{}
 		if err := json.Unmarshal(msg, &request); nil != err {
-			result := NewResult()
+			result := model.NewResult()
 			result.Code = -1
 			result.Msg = "Bad Request"
 			responseData, _ := json.Marshal(result)
-			Push(responseData)
+			s.Write(responseData)
 			return
 		}
 
 		cmdStr := request["cmd"].(string)
 		cmdId := request["reqId"].(float64)
 		param := request["param"].(map[string]interface{})
-		cmd := NewCommand(cmdStr, cmdId, param)
-		if nil == cmd {
-			result := NewResult()
+		command := cmd.NewCommand(cmdStr, cmdId, param, s)
+		if nil == command {
+			result := model.NewResult()
 			result.Code = -1
 			result.Msg = "查找命令 [" + cmdStr + "] 失败"
-			Push(result.Bytes())
+			s.Write(result.Bytes())
 			return
 		}
-		Exec(cmd)
+		cmd.Exec(command)
 	})
 
 	handleSignal()
 
-	addr := "127.0.0.1:" + ServerPort
-	Logger.Infof("内核进程 [v%s] 正在启动，监听端口 [%s]", Ver, "http://"+addr)
+	addr := "127.0.0.1:" + model.ServerPort
+	model.Logger.Infof("内核进程 [v%s] 正在启动，监听端口 [%s]", model.Ver, "http://"+addr)
 	if err := r.Run(addr); nil != err {
-		Logger.Errorf("启动链滴笔记内核失败 [%s]", err)
+		model.Logger.Errorf("启动链滴笔记内核失败 [%s]", err)
 	}
 }
 
@@ -128,24 +132,11 @@ func handleSignal() {
 
 	go func() {
 		s := <-c
-		Logger.Infof("收到系统信号 [%s]，退出内核进程", s)
+		model.Logger.Infof("收到系统信号 [%s]，退出内核进程", s)
 
-		Close()
+		model.Close()
 		os.Exit(0)
 	}()
-}
-
-var ppid = os.Getppid()
-
-func ParentExited() {
-	for range time.Tick(2 * time.Second) {
-		process, e := ps.FindProcess(ppid)
-		if nil == process || nil != e {
-			Logger.Info("UI 进程已经退出，现在退出内核进程")
-			Close()
-			os.Exit(0)
-		}
-	}
 }
 
 func shortReqMsg(msg []byte) []byte {

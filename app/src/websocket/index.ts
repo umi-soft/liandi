@@ -1,10 +1,7 @@
 import {Constants} from '../constants';
-import {hideMessage, showMessage} from '../util/message';
-import {destroyDialog, dialog} from '../util/dialog';
+import {showMessage} from '../util/message';
+import {destroyDialog} from '../util/dialog';
 import {i18n} from '../i18n';
-import {showMountDialog} from '../util/mount';
-import {lauguage} from '../config/language';
-import {theme} from '../config/theme';
 import {onSearch} from '../search';
 import {markdown} from '../config/markdown';
 import {image} from '../config/image';
@@ -64,113 +61,79 @@ export class WebSocketUtil {
                 case 'search':
                     onSearch(liandi, response.data);
                     break;
+                case 'searchblock':
+                    liandi.editors.showSearchBlock(liandi, response.data);
+                    break;
+                case 'searchget':
+                    liandi.editors.onGet(liandi, response.data);
+                    liandi.backlinks.getBacklinks(liandi);
+                    // TODO liandi.find.open(response.data.key, response.data.index);
+                    break;
                 case 'setimage':
-                    image.onSetimage(liandi, response.data);
+                    image.onSetImage(liandi, response.data);
                     break;
                 case 'setlang':
-                    lauguage.onSetlang();
+                    window.location.reload();
                     break;
                 case 'setmd':
-                    markdown.onSetmd(liandi, response.data);
+                    markdown.onSetMD(liandi, response.data);
                     break;
                 case 'settheme':
-                    theme.onSetTheme(liandi, response.data);
+                    liandi.editors.onSetTheme(liandi, response.data);
                     break;
                 case 'getconf':
-                    if (this.isFirst) {
-                        liandi.config = response.data;
-                    }
+                    liandi.config = Object.assign({
+                        lang: 'zh_CN'
+                    }, response.data);
+                    document.title = i18n[liandi.config.lang].slogan;
 
-                    if (!liandi.config.lang) {
-                        dialog({
-                            hideBackground: true,
-                            content: `<select class="input">
-    <option value="en_US" selected>English</option>
-    <option value="zh_CN">简体中文</option>
-</select>`,
-                            width: 400,
-                            height: 60,
-                            destroyDialogCallback: () => {
-                                liandi.ws.send('setlang', {
-                                    lang: 'en_US'
-                                });
-                            }
-                        });
-                        document.querySelector('select').addEventListener('change', (selectEvent) => {
-                            liandi.ws.send('setlang', {
-                                lang: (selectEvent.target as HTMLSelectElement).value
-                            });
-                        });
-                        return;
-                    }
-
-                    if (this.isFirst) {
-                        document.title = i18n[liandi.config.lang || 'en_US'].slogan;
-                        callback();
-                        theme.onSetTheme(liandi, response.data.theme);
-                        this.isFirst = false;
-                    }
+                    callback();
+                    liandi.editors.onSetTheme(liandi, response.data.theme);
 
                     if (response.data.dirs.length === 0) {
-                        showMountDialog(liandi);
-                        return;
+                        liandi.navigation.hide();
+                    } else {
+                        response.data.dirs.map((item: IDir) => {
+                            liandi.navigation.onMount(liandi, {dir: item});
+                        });
                     }
-
-                    liandi.navigation.element.innerHTML = '';
-                    response.data.dirs.map((item: IDir) => {
-                        liandi.navigation.onMount({dir: item});
-                    });
+                    this.isFirst = false;
                     break;
                 case 'put':
                     showMessage(i18n[liandi.config.lang].saveSuccess);
+                    liandi.backlinks.getBacklinks(liandi);
                     break;
-                case 'lsd':
-                    liandi.navigation.onLsd(liandi, response.data);
-                    break;
-                case 'unmount':
-                    if (liandi.navigation.element.querySelectorAll('tree-list').length === 0) {
-                        showMountDialog(liandi);
-                    }
+                case 'backlinks':
+                    liandi.backlinks.onBacklinks(liandi, response.data.backlinks);
                     break;
                 case 'mount':
                 case 'mountremote':
-                    this.send('dirs', {});
-                    hideMessage();
                     destroyDialog();
+                    liandi.navigation.onMount(liandi, response.data)
                     break;
                 case 'ls':
-                    liandi.files.onLs(liandi, response.data);
+                    liandi.navigation.onLs(liandi, response.data);
                     break;
                 case 'get':
-                    liandi.editors.focus();
-                    liandi.editors.sendMessage(Constants.LIANDI_EDITOR_OPEN, liandi, response.data);
+                    liandi.editors.onGet(liandi, response.data);
+                    liandi.backlinks.getBacklinks(liandi);
                     break;
-                case 'searchget':
-                    liandi.editors.sendMessage(Constants.LIANDI_EDITOR_OPEN, liandi, response.data);
-                    liandi.find.open(response.data.key, parseInt(response.data.index, 10));
-                    break;
-                case 'dirs':
-                    if (response.data.length === 0) {
-                        showMountDialog(liandi);
-                        return;
-                    }
-                    liandi.navigation.element.innerHTML = '';
-                    response.data.map((item: { dir: IDir }) => {
-                        liandi.navigation.onMount(item);
-                    });
+                case 'getblock':
+                    liandi.editors.onGetBlock(response.data);
                     break;
                 case 'rename':
-                    liandi.files.onRename(liandi, response.data);
+                    liandi.navigation.onRename(liandi, response.data);
                     break;
                 case 'create':
-                    liandi.editors.sendMessage(Constants.LIANDI_EDITOR_OPEN, liandi,
-                        {content: '', name: response.data.name});
-                case 'remove':
                 case 'mkdir':
-                    window.liandi.liandi.ws.send('ls', {
-                        url: response.data.url,
-                        path: response.data.path,
-                    });
+                    liandi.menus.itemData.target.firstElementChild.classList.remove("fn__hidden")
+                    if (liandi.menus.itemData.target.firstElementChild.classList.contains('item__arrow--open')) {
+                        liandi.menus.itemData.target.firstElementChild.classList.remove('item__arrow--open')
+                        liandi.menus.itemData.target.nextElementSibling.remove();
+                    }
+                    liandi.menus.itemData.target.setAttribute('data-files', JSON.stringify(response.data.files));
+                    liandi.navigation.getLeaf(liandi.menus.itemData.target, response.data.dir);
+                    destroyDialog();
                     break;
             }
         };

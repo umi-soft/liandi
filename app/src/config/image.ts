@@ -9,14 +9,14 @@ export const image = {
     },
     bindEvent: (liandi: ILiandi, element: HTMLElement) => {
         element.querySelectorAll('input').forEach((item) => {
-            item.addEventListener('change', (event) => {
+            item.addEventListener('change', () => {
                 liandi.ws.send('setimage', {
                     autoFetch: (element.querySelector('#autoFetch') as HTMLInputElement).checked,
                 });
             });
         });
     },
-    onSetimage: (liandi: ILiandi, imageConfig: IImage) => {
+    onSetImage: (liandi: ILiandi, imageConfig: IImage) => {
         liandi.config.image = imageConfig;
     }
 };

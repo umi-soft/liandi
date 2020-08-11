@@ -32,22 +32,13 @@ export const mountWebDAV = (liandi: ILiandi) => {
 <div class="fn__flex"><div class="fn__flex-1"></div>
 <button class="button">${i18n[liandi.config.lang].confirm}</button><div class="fn__space"></div>
 <button class="button button--cancel">${i18n[liandi.config.lang].cancel}</button></div>`,
-        width: 400,
-        destroyDialogCallback: () => {
-            if (liandi.navigation.element.querySelectorAll('tree-list').length === 0) {
-                showMountDialog(liandi);
-            }
-        }
+        width: 400
     });
 
     const dialogElement = document.querySelector('#dialog');
     dialogElement.querySelector('input').focus();
     dialogElement.querySelector('.button--cancel').addEventListener('click', () => {
-        if (liandi.navigation.element.querySelectorAll('tree-list').length === 0) {
-            showMountDialog(liandi);
-        } else {
-            destroyDialog();
-        }
+        destroyDialog();
     });
     dialogElement.querySelector('.button').addEventListener('click', () => {
         const inputs = dialogElement.querySelectorAll('input');
@@ -63,25 +54,3 @@ export const mountWebDAV = (liandi: ILiandi) => {
     });
 };
 
-export const showMountDialog = (liandi: ILiandi) => {
-    dialog({
-        title: i18n[liandi.config.lang].slogan,
-        content: `<div class="list--signal"><div class="list__item">${i18n[liandi.config.lang].mount}</div>
-<div class="list__item">${i18n[liandi.config.lang].mountWebDAV}</div></div>`,
-        hideBackground: true,
-        width: 400,
-        destroyDialogCallback: () => {
-            if (liandi.navigation.element.querySelectorAll('tree-list').length === 0) {
-                showMountDialog(liandi);
-            }
-        }
-    });
-
-    const listElement = document.querySelectorAll('#dialog .list__item');
-    listElement[0].addEventListener('click', () => {
-        mountFile(liandi);
-    });
-    listElement[1].addEventListener('click', () => {
-        mountWebDAV(liandi);
-    });
-};

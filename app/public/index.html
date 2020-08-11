@@ -2,8 +2,8 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag -->
-    <meta http-equiv="Content-Security-Policy" content="script-src 'self'"/>
+    <!-- https://electronjs.org/docs/tutorial/security#csp-meta-tag
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self'"/>-->
 </head>
 <body>
 <div class="window-controls">
@@ -44,19 +44,52 @@
     </svg>
 </div>
 <div class="fn__flex wrap">
-    <div class="navigation fn__flex-column" id="navigation"></div>
+    <div class="navigation" id="navigation"></div>
     <div class="resize" id="resize"></div>
-    <div class="files fn__flex-column" id="files"></div>
-    <div class="resize" id="resize2"></div>
-    <div class="fn__flex-1 fn__flex-column editors" id="editors">
-        <div class="editors__loading">
-            <svg width="160px"  height="160px"  xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid" class="lds-double-ring" style="background: none;"><circle cx="50" cy="50" ng-attr-r="{{config.radius}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c1}}" ng-attr-stroke-dasharray="{{config.dasharray}}" fill="none" stroke-linecap="round" r="20" stroke-width="4" stroke="#3b3e43" stroke-dasharray="31.41592653589793 31.41592653589793" transform="rotate(111.924 50 50)"><animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;360 50 50" keyTimes="0;1" dur="1.5s" begin="0s" repeatCount="indefinite"></animateTransform></circle><circle cx="50" cy="50" ng-attr-r="{{config.radius2}}" ng-attr-stroke-width="{{config.width}}" ng-attr-stroke="{{config.c2}}" ng-attr-stroke-dasharray="{{config.dasharray2}}" ng-attr-stroke-dashoffset="{{config.dashoffset2}}" fill="none" stroke-linecap="round" r="15" stroke-width="4" stroke="#d23f31" stroke-dasharray="23.561944901923447 23.561944901923447" stroke-dashoffset="23.561944901923447" transform="rotate(-111.924 50 50)"><animateTransform attributeName="transform" type="rotate" calcMode="linear" values="0 50 50;-360 50 50" keyTimes="0;1" dur="1.5s" begin="0s" repeatCount="indefinite"></animateTransform></circle></svg>
+    <div class="fn__flex-1" id="editors">
+        <div id="editorBlockHint" class="editor__blockhint"></div>
+        <div class="editor__empty">
+            <div>
+                <div class="item fn__flex-inline">搜索/配置 &lt;Double Shift></div>
+                <div class="item fn__a" id="editorEmptyMount">挂载本地目录</div>
+                <div class="item fn__a" id="editorEmptyMountDAV">挂载远程 WebDAV 目录</div>
+            </div>
         </div>
-        <div class="editors__drag"></div>
-        <input class="editors__input fn__none">
-        <webview nodeintegration class="editors__webview fn__flex-1 fn__none" src="editor.html" allowpopups></webview>
+    </div>
+    <div class="resize fn__none" id="resize2"></div>
+    <div class="backlinks fn__none" id="backlinks"></div>
+    <div class="bar fn__flex-column">
+        <div id="barNavigation" class="item vditor-tooltipped fn__a vditor-tooltipped__w" aria-label="文件树">
+            <svg>
+                <use xlink:href="#iconFolder"></use>
+            </svg>
+        </div>
+        <div id="barBacklinks" class="item vditor-tooltipped fn__a vditor-tooltipped__w" aria-label="反向链接">
+            <svg>
+                <use xlink:href="#iconLink"></use>
+            </svg>
+        </div>
+        <div class="fn__flex-1"></div>
+        <a href="https://hacpai.com/sponsor" class="item vditor-tooltipped vditor-tooltipped__w ft__pink" aria-label="靠爱发电">
+            <svg>
+                <use xlink:href="#iconFavorite"></use>
+            </svg>
+        </a>
+        <a href="https://hacpai.com/article/1582778815353" class="item vditor-tooltipped fn__a vditor-tooltipped__w"
+           aria-label="快捷键">
+            <svg>
+                <use xlink:href="#iconKeyboard"></use>
+            </svg>
+        </a>
+        <div id="barSettings" class="item vditor-tooltipped fn__a vditor-tooltipped__w" aria-label="配置<Double Shift>">
+            <svg>
+                <use xlink:href="#iconSettings"></use>
+            </svg>
+        </div>
     </div>
 </div>
+<div class="drag"></div>
+<div class="loading"></div>
 <script src="../dist/main.js"></script>
 </body>
 </html>

@@ -1,0 +1,42 @@
+.backlinks {
+  max-width: 495px;
+  min-width: 200px;
+  width: 200px;
+  overflow: auto;
+  box-sizing: border-box;
+  background-color: var(--focus-background-color);
+  border-left: 1px solid var(--border-color);
+
+  &__title {
+    margin: 10px;
+  }
+
+  .item {
+    word-break: break-all;
+    margin-bottom: 10px;
+
+    h2 {
+      cursor: pointer;
+      font-weight: normal;
+      padding: 0 10px;
+      font-size: 14px;
+      line-height: 24px;
+
+      &:hover {
+        background-color: $blue;
+        color: $white;
+      }
+    }
+
+    &__content {
+      padding: 0 10px;
+      font-size: 12px;
+      line-height: 20px;
+      color: var(--text-secondary-color);
+
+      &:hover {
+        color: var(--text-color);
+      }
+    }
+  }
+}
